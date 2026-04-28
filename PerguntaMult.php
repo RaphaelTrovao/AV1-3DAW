@@ -6,6 +6,8 @@
         $rC = $_POST["resC"];
         $rD = $_POST["resD"];
         $gabarito = $_POST["respostaCorreta"];
+        $id = 1;
+        $fn = "perguntaMult.txt";
         if(!file_exists("perguntaMult.txt")){
         $arq = fopen("perguntaMult.txt", "w") or die("Não foi possível criar o arquivo");
         $linha = "pergunta;respostaA;respostaB;respostaC;respostaD;respostaCerta\n";
@@ -13,7 +15,14 @@
             fclose($arq);
     }
     $arq = fopen("perguntaMult.txt", "a") or die("Não foi possível abrir o arquivo");
-    $linha = $pergunta . ";" . $rA . ";" . $rB . ";" . $rC . ";" . $rD . ";" . $gabarito ."\n";
+    $lines = file($fn);
+    if(!empty($lines)){
+        $ult = end($lines);
+        $colunaD = explode(";", $ult);
+        $uid = (int) $colunaD[0];
+        $novid = $uid +1;
+    }
+    $linha = $novid . ";" . $pergunta . ";" . $rA . ";" . $rB . ";" . $rC . ";" . $rD . ";" . $gabarito ."\n";
     fwrite($arq,$linha);
     fclose($arq);
     $msg = "Pergunta Adicionada";
