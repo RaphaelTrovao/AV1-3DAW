@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            .hide {
+                display: none;
+            }
+        </style>
+    </head>
+    <body>
+        <nav>
+            <button onclick="mudarT('tList')">Listar Perguntas</button>
+            <button onclick="mudarT('tInc')">Adicionar Pergunta</button>
+        </nav>
+        
+        <section id="tList" class="view">
+            <h2>Lista de Perguntas</h2>
+            <table id="lista">
+                <tr>
+                    <th>Pergunta</th>
+                    <th>Tipo</th>
+                    <th>ID</th>
+                    <th>Ações</th>
+                </tr>
+                <tr id="lsL">
+                    <td colspan="4"></td>
+                </tr>
+            </table>
+        </section>
+        
+        <section id="tInc" class="view hide">
+            <h1>Adicionar / Editar Pergunta: </h1>
+            <form action="" method="POST">
+                <input type="radio" name="pergunta" id="mult">Múltipla escolha
+                <input type="radio" name="pergunta" id="disc" checked>Discursiva
+            </form>
+            <br><br>
+            
+            <form class="hide" id="mP" method="POST">
+                Insira a pergunta: <input type="text" name="perguntaM" id="perguntaM" value="" required>
+                <br><br>
+                Resposta A: <input type="text" name="resA" id="resA" value="" required>
+                <br><br>
+                Resposta B: <input type="text" name="resB" id="resB" value="" required>
+                <br><br>
+                Resposta C: <input type="text" name="resC" id="resC" value="" required>
+                <br><br>
+                Resposta D: <input type="text" name="resD" id="resD" value="" required>
+                <br><br>
+                <input type="radio" name="respostaCorreta" id="respostaCorM_A" value="A" required> A
+                <input type="radio" name="respostaCorreta" id="respostaCorM_B" value="B" required> B
+                <input type="radio" name="respostaCorreta" id="respostaCorM_C" value="C" required> C
+                <input type="radio" name="respostaCorreta" id="respostaCorM_D" value="D" required> D
+                <br><br>
+                <button type="submit" id="btnNovoM" onclick="enviar(event);">Enviar</button>
+                <button type="submit" id="btnEditarM" class="hide" onclick="salvarAlteracao(event);">Salvar Alteração</button>
+            </form>
+            
+            <form id="mD" method="POST"> 
+                Insira a pergunta: <input type="text" name="perguntaD" id="perguntaD" value="" required>
+                <br><br>
+                Resposta : <input type="text" name="res" id="respostaCorD" value="" required>
+                <br><br>
+                <button type="submit" id="btnNovoD" onclick="enviar(event);">Enviar</button>
+                <button type="submit" id="btnEditarD" class="hide" onclick="salvarAlteracao(event);">Salvar Alteração</button>
+            </form>
+        </section>
+    </body>
+</html>
+
+<script>
+    let select = "d";
+    let idPerguntaEditando = "";
+
+    const mult = document.getElementById('mult');
+    const disc = document.getElementById('disc');
+    const mP = document.getElementById('mP');
+    const mD = document.getElementById('mD');
+
+    window.onload = function() {
+        listarPergunta();
+    };
+
+    function mudarT(idTela){
+        const telas = document.querySelectorAll('.view');
+        telas.forEach(tela => {
+            tela.classList.add('hide');
+        });
+        document.getElementById(idTela).classList.remove('hide');
+        
+        if(idTela === 'tList') {
+            document.getElementById("btnNovoD").classList.remove("hide");
+            document.getElementById("btnEditarD").classList.add("hide");
+            document.getElementById("btnNovoM").classList.remove("hide");
+            document.getElementById("btnEditarM").classList.add("hide");
+            listarPergunta();
+        }
+    }
+
+    mult.addEventListener('click', () => {
+        mP.classList.remove('hide');
+        mD.classList.add('hide');
+        select = "m";
+    });
+
+    disc.addEventListener('click', () => {
+        mD.classList.remove('hide');
+        mP.classList.add('hide');
+        select = "d";
+    });
+
+    function enviar(event){
+        event.preventDefault();
+        let pergunta = ""; let resposta = ""; let rA = ""; let rB = ""; let rC = ""; let rD = "";
+
+        if(select == "d"){
+            pergunta = document.getElementById("perguntaD").value;
+            resposta = document.getElementById("respostaCorD").value;
+        } else if (select == "m"){
+            pergunta = document.getElementById("perguntaM").value;
+            let respostaCorr = document.querySelector('input[name="respostaCorreta"]:checked');
+            resposta = respostaCorr ? respostaCorr.value : "";
+            rA = document.getElementById("resA").value;
+            rB = document.getElementById("resB").value;
+            rC = document.getElementById("resC").value;
+            rD = document.getElementById("resD").value;
+        }
+
+        let xml = new XMLHttpRequest();
+        xml.open("POST", "http://localhost/AV2-3DAW/IncluirPergunta.php");
+        xml.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        
+        xml.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                alert("Adicionado com sucesso!");
+                mudarT('tList');
+            }
+        };
+
+        xml.send("pergunta=" + pergunta + "&resposta=" + resposta + "&resA=" + rA + "&resB=" + rB + "&resC=" + rC + "&resD=" + rD + "&tipo=" + select);
+    }
+
+    function listarPergunta(){
+        let tabela = document.getElementById("lista");
+        while (tabela.rows.length > 2) {
+            tabela.deleteRow(1);
+        }
+
+        let xml = new XMLHttpRequest();
+        xml.open("GET", "http://localhost/AV2-3DAW/ListarPergunta.php");
+        
+        xml.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                if(this.responseText.trim() !== "") {
+                    let retJson = JSON.parse(this.responseText);
+                    for(let i = 0; i < retJson.length; i++){
+                        CriarTB(retJson[i]);
+                    }
+                }
+            }
+        };
+        xml.send();
+    }
+
+    function CriarTB(pretJson){
+        let tr = document.createElement("tr");
+        
+        let td = document.createElement("td");
+        td.appendChild(document.createTextNode(pretJson.pergunta));
+        tr.appendChild(td);
+
+        let td2 = document.createElement("td");
+        td2.appendChild(document.createTextNode(pretJson.tipo));
+        tr.appendChild(td2);
+
+        let td3 = document.createElement("td");
+        td3.appendChild(document.createTextNode(pretJson.id));
+        tr.appendChild(td3);
+
+        let td4 = document.createElement("td");
+        
+        let tagP = document.createElement("span");
+        tagP.setAttribute("onclick", "buscaP('" + pretJson.id + "')");
+        tagP.appendChild(document.createTextNode("Alterar")); 
+        td4.appendChild(tagP);
+        
+        td4.appendChild(document.createTextNode(" | "));
+        
+        let btnExcluir = document.createElement("span");
+        btnExcluir.setAttribute("onclick", "excluirP('" + pretJson.id + "', '" + pretJson.tipo + "')");
+        btnExcluir.appendChild(document.createTextNode("Excluir"));
+        btnExcluir.style.color = "red"; 
+        td4.appendChild(btnExcluir);
+        
+        tr.appendChild(td4);
+        
+        let tr_f = document.getElementById("lsL");
+        tr_f.parentNode.insertBefore(tr, tr_f);
+    }
+
+    function buscaP(id) {
+        idPerguntaEditando = id;
+        mudarT('tInc'); 
+        
+
+        document.getElementById("btnNovoD").classList.add("hide");
+        document.getElementById("btnEditarD").classList.remove("hide");
+        document.getElementById("btnNovoM").classList.add("hide");
+        document.getElementById("btnEditarM").classList.remove("hide");
+        
+        alert("Modo Edição para o ID: " + id + ". Em breve o JS vai preencher os inputs automaticamente!");
+    }
+
+    function salvarAlteracao(event) {
+        event.preventDefault();
+        let pergunta = ""; let resposta = ""; let rA = ""; let rB = ""; let rC = ""; let rD = "";
+
+        if (select == "d") {
+            pergunta = document.getElementById("perguntaD").value;
+            resposta = document.getElementById("respostaCorD").value;
+        } else if (select == "m") {
+            pergunta = document.getElementById("perguntaM").value;
+            let respostaCorr = document.querySelector('input[name="respostaCorreta"]:checked');
+            resposta = respostaCorr ? respostaCorr.value : "";
+            rA = document.getElementById("resA").value;
+            rB = document.getElementById("resB").value;
+            rC = document.getElementById("resC").value;
+            rD = document.getElementById("resD").value;
+        }
+
+        let xml = new XMLHttpRequest();
+        xml.open("POST", "http://localhost/AV2-3DAW/AlterarPergunta.php"); 
+        xml.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        
+        xml.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                alert("Alterado com sucesso!");
+                idPerguntaEditando = "";
+                mudarT('tList');
+            }
+        };
+
+        let dadosAlterados = "id=" + idPerguntaEditando + "&pergunta=" + pergunta + "&resposta=" + resposta + "&resA=" + rA + "&resB=" + rB + "&resC=" + rC + "&resD=" + rD + "&tipo=" + select;
+        xml.send(dadosAlterados);
+    }
+
+    function excluirP(id, tipo) {
+        if(confirm("Deseja realmente excluir a pergunta ID " + id + "?")) {
+            let xml = new XMLHttpRequest();
+            xml.open("POST", "http://localhost/AV2-3DAW/ExcluirPergunta.php");
+            xml.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+            xml.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    alert(this.responseText); 
+                    listarPergunta(); 
+                }
+            };
+            xml.send("id=" + id + "&tipo=" + tipo);
+        }
+    }
+</script>
